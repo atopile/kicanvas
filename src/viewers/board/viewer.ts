@@ -135,7 +135,10 @@ export class BoardViewer extends DocumentViewer<
         }
 
         const layer_filter = (
-            elem: board_items.Text | board_items.GraphicItem,
+            elem:
+                | board_items.Text
+                | board_items.GraphicItem
+                | board_items.Property,
         ) => {
             const layer =
                 typeof elem.layer === "string" ? elem.layer : elem.layer.name;

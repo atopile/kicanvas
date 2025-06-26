@@ -95,14 +95,8 @@ suite("kicad.board.KicadPCB(): board parsing", function () {
         const pcb = new board.KicadPCB("test.kicad_pcb", properties_pcb_src);
 
         assert.equal(pcb.properties.size, 2);
-        assert.deepEqual(pcb.properties.get("var1"), {
-            name: "var1",
-            value: "var 1 value",
-        });
-        assert.deepEqual(pcb.properties.get("var2"), {
-            name: "var2",
-            value: "var 2 value",
-        });
+        assert.equal(pcb.properties.get("var1")?.value, "var 1 value");
+        assert.equal(pcb.properties.get("var2")?.value, "var 2 value");
 
         assert.equal(pcb.resolve_text_var("var1"), "var 1 value");
         assert.equal(pcb.resolve_text_var("var2"), "var 2 value");

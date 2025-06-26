@@ -591,19 +591,27 @@ class FpTextPainter extends BoardItemPainter {
     }
 
     paint(layer: ViewLayer, t: board_items.FpText) {
-        if (this.filter_net) return;
+        FpTextPainter.paint_text(this, layer, t);
+    }
+
+    static paint_text(
+        painter: BoardItemPainter,
+        layer: ViewLayer,
+        t: board_items.TextLike,
+    ) {
+        if (painter.filter_net) return;
 
         if (t.hide || !t.shown_text) {
             return;
         }
 
         if (t.render_cache) {
-            this.gfx.state.push();
-            this.gfx.state.matrix = Matrix3.identity();
+            painter.gfx.state.push();
+            painter.gfx.state.matrix = Matrix3.identity();
             for (const poly of t.render_cache.polygons) {
-                this.view_painter.paint_item(layer, poly);
+                painter.view_painter.paint_item(layer, poly);
             }
-            this.gfx.state.pop();
+            painter.gfx.state.pop();
             return;
         }
 
@@ -616,10 +624,11 @@ class FpTextPainter extends BoardItemPainter {
         edatext.attributes.color = layer.color;
 
         if (t.parent) {
-            const rot = Angle.from_degrees(t.parent.at.rotation);
+            const parent = t.parent as board_items.Footprint;
+            const rot = Angle.from_degrees(parent.at.rotation);
             let pos = edatext.text_pos;
             pos = rot.rotate_point(pos, new Vec2(0, 0));
-            pos = pos.add(t.parent.at.position.multiply(10000));
+            pos = pos.add(parent.at.position.multiply(10000));
             edatext.text_pos.set(pos);
         }
 
@@ -632,16 +641,32 @@ class FpTextPainter extends BoardItemPainter {
             }
         }
 
-        this.gfx.state.push();
-        this.gfx.state.matrix = Matrix3.identity();
+        painter.gfx.state.push();
+        painter.gfx.state.matrix = Matrix3.identity();
 
         StrokeFont.default().draw(
-            this.gfx,
+            painter.gfx,
             edatext.shown_text,
             edatext.text_pos,
             edatext.attributes,
         );
-        this.gfx.state.pop();
+        painter.gfx.state.pop();
+    }
+}
+
+class PropertyPainter extends BoardItemPainter {
+    classes = [board_items.Property];
+
+    layers_for(p: board_items.Property): string[] {
+        if (p.hide) {
+            return [];
+        } else {
+            return [p.layer];
+        }
+    }
+
+    paint(layer: ViewLayer, p: board_items.Property) {
+        FpTextPainter.paint_text(this, layer, p);
     }
 }
 
@@ -985,6 +1010,7 @@ export class BoardPainter extends DocumentPainter {
             new GrTextPainter(this, gfx),
             new FpTextPainter(this, gfx),
             new DimensionPainter(this, gfx),
+            new PropertyPainter(this, gfx),
         ];
     }
 

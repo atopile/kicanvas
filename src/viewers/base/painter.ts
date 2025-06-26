@@ -21,8 +21,8 @@ export abstract class ItemPainter {
     abstract classes: unknown[];
 
     constructor(
-        protected view_painter: DocumentPainter,
-        protected gfx: Renderer,
+        public view_painter: DocumentPainter,
+        public gfx: Renderer,
     ) {}
 
     abstract layers_for(item: unknown): string[];

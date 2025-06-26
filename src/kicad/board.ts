@@ -129,11 +129,28 @@ export class KicadPCB {
     }
 }
 
+export interface TextLike {
+    parent?: Footprint | Dimension | KicadPCB;
+    shown_text: string;
+    effects: Effects;
+    at: At;
+    render_cache: TextRenderCache;
+    hide: boolean;
+}
+
 export class Property {
     name: string;
     value: string;
+    at: At;
+    layer: string;
+    effects = new Effects();
+    hide = false;
+    render_cache: TextRenderCache;
 
-    constructor(expr: Parseable) {
+    constructor(
+        expr: Parseable,
+        public parent?: Footprint | Dimension | KicadPCB,
+    ) {
         Object.assign(
             this,
             parse_expr(
@@ -141,8 +158,21 @@ export class Property {
                 P.start("property"),
                 P.positional("name", T.string),
                 P.positional("value", T.string),
+                P.item("at", At),
+                P.pair("layer", T.string),
+                P.item("effects", Effects),
+                P.atom("hide"),
+                P.item("render_cache", TextRenderCache),
             ),
         );
+    }
+
+    get shown_text(): string {
+        return this.value;
+    }
+
+    get bbox(): BBox {
+        return Text.get_bbox(this);
     }
 }
 
@@ -795,7 +825,7 @@ export class Footprint {
         allow_solder_mask_bridges: false,
         allow_missing_courtyard: false,
     };
-    properties: Record<string, string> = {};
+    properties = new Map<string, Property>();
     drawings: FootprintDrawings[] = [];
     pads: Pad[] = [];
     #pads_by_number = new Map<string, Pad>();
@@ -845,7 +875,12 @@ export class Footprint {
                     P.atom("allow_solder_mask_bridges"),
                     P.atom("allow_missing_courtyard"),
                 ),
-                P.dict("properties", "property", T.string),
+                P.mapped_collection(
+                    "properties",
+                    "property",
+                    (p: Property) => p.name,
+                    T.item(Property, this),
+                ),
                 P.collection("drawings", "fp_line", T.item(FpLine, this)),
                 P.collection("drawings", "fp_circle", T.item(FpCircle, this)),
                 P.collection("drawings", "fp_arc", T.item(FpArc, this)),
@@ -876,12 +911,12 @@ export class Footprint {
             }
         }
 
-        for (const [name, value] of Object.entries(this.properties)) {
+        for (const [name, prop] of this.properties) {
             if (name == "Reference") {
-                this.reference = value;
+                this.reference = prop.value;
             }
             if (name == "Value") {
-                this.value = value;
+                this.value = prop.value;
             }
         }
     }
@@ -890,7 +925,14 @@ export class Footprint {
         return this.tstamp;
     }
 
-    *items(): Generator<FootprintDrawings | Pad | Zone, void, undefined> {
+    *items(): Generator<
+        FootprintDrawings | Pad | Zone | Property,
+        void,
+        undefined
+    > {
+        // return properties as FpText
+        yield* this.properties.values();
+
         yield* this.drawings ?? [];
         yield* this.zones ?? [];
         yield* this.pads.values() ?? [];
@@ -928,8 +970,8 @@ export class Footprint {
             }
         }
 
-        if (this.properties[name] !== undefined) {
-            return this.properties[name]!;
+        if (this.properties.get(name) !== undefined) {
+            return this.properties.get(name)!.value;
         }
 
         return this.parent.resolve_text_var(name);
@@ -948,7 +990,7 @@ export class Footprint {
         return this.get_bbox((item) => !(item instanceof FpText));
     }
 
-    get_bbox(filter: (item: FootprintDrawings) => boolean) {
+    get_bbox(filter: (item: FootprintDrawings | Property) => boolean) {
         if (!this.#bbox) {
             // Based on FOOTPRINT::GetBoundingBox, excludes text items.
 
@@ -967,7 +1009,10 @@ export class Footprint {
                 this.at.position.y,
             ).rotate_self(Angle.deg_to_rad(this.at.rotation));
 
-            for (const item of this.drawings) {
+            for (const item of [
+                ...this.drawings,
+                ...this.properties.values(),
+            ]) {
                 if (!filter(item)) {
                     continue;
                 }
@@ -1342,12 +1387,16 @@ export class Text {
     }
 
     get bbox(): BBox {
-        const size = this.effects.font.size;
-        const at_pos = this.at.position;
-        const chars = this.shown_text.length;
+        return Text.get_bbox(this);
+    }
+
+    static get_bbox(text: TextLike) {
+        const size = text.effects.font.size;
+        const at_pos = text.at.position;
+        const chars = text.shown_text.length;
         const w = size.x * chars;
         const h = size.y;
-        const justify = this.effects.justify;
+        const justify = text.effects.justify;
         let low_x;
         let high_x;
         let low_y;
