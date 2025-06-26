@@ -71,6 +71,15 @@ export class BoardViewer extends DocumentViewer<
         super.select(item);
     }
 
+    /**
+     * Override zoom_to_page to zoom to board if possible
+     */
+    public override zoom_to_page() {
+        if (!this.zoom_to_board()) {
+            super.zoom_to_page();
+        }
+    }
+
     highlight_net(net: number) {
         this.painter.paint_net(this.board, net);
         this.draw();
@@ -118,9 +127,60 @@ export class BoardViewer extends DocumentViewer<
         this.draw();
     }
 
-    zoom_to_board() {
-        const edge_cuts = this.layers.by_name(LayerNames.edge_cuts)!;
-        const board_bbox = edge_cuts.bbox;
-        this.viewport.camera.bbox = board_bbox.grow(board_bbox.w * 0.1);
+    zoom_to_board(): boolean {
+        const bboxes: BBox[] = [];
+        const edge_cuts = this.layers.by_name(LayerNames.edge_cuts);
+        if (edge_cuts) {
+            bboxes.push(edge_cuts.bbox);
+        }
+
+        const layer_filter = (
+            elem: board_items.Text | board_items.GraphicItem,
+        ) => {
+            const layer =
+                typeof elem.layer === "string" ? elem.layer : elem.layer.name;
+            return (
+                (layer.startsWith("F.") || layer.startsWith("B.")) &&
+                !layer.endsWith("Fab")
+            );
+        };
+
+        for (const collection of [
+            this.board.footprints,
+            this.board.segments,
+            this.board.vias,
+            this.board.zones,
+            this.board.drawings,
+        ]) {
+            for (const elem of collection) {
+                if (elem instanceof board_items.Dimension) {
+                    continue;
+                }
+                // filter non-visible layers in graphics
+                if (elem instanceof board_items.GraphicItem) {
+                    if (!layer_filter(elem)) {
+                        continue;
+                    }
+                }
+                let bbox = undefined;
+                if (elem instanceof board_items.Footprint) {
+                    bbox = elem.get_bbox(layer_filter);
+                } else {
+                    bbox = elem.bbox;
+                }
+                bboxes.push(bbox);
+            }
+        }
+
+        if (bboxes.length === 0) {
+            return false;
+        }
+        const board_bbox = BBox.combine(bboxes);
+        this.viewport.camera.bbox = board_bbox.grow(
+            board_bbox.w * 0.1,
+            board_bbox.h * 0.1,
+        );
+        this.draw();
+        return true;
     }
 }
