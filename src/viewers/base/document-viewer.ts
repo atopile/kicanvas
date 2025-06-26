@@ -19,6 +19,7 @@ import { Viewer } from "./viewer";
 import { later } from "../../base/async";
 
 const log = new Logger("kicanvas:viewer");
+const SHOW_DRAWING_SHEET = false;
 
 type ViewableDocument = DrawingSheetDocument &
     PaintableDocument & { filename: string };
@@ -113,10 +114,14 @@ export abstract class DocumentViewer<
         this.painter.paint(this.document);
 
         // Paint the drawing sheet
-        log.info("Painting drawing sheet");
-        new DrawingSheetPainter(this.renderer, this.layers, this.theme).paint(
-            this.drawing_sheet,
-        );
+        if (SHOW_DRAWING_SHEET) {
+            log.info("Painting drawing sheet");
+            new DrawingSheetPainter(
+                this.renderer,
+                this.layers,
+                this.theme,
+            ).paint(this.drawing_sheet);
+        }
 
         // Create the grid
         log.info("Painting grid");
