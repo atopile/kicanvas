@@ -9,6 +9,16 @@ import { html } from "../../../base/web-components";
 import { KCUIElement, type KCUIRangeElement } from "../../../kc-ui";
 import { BoardViewer } from "../../../viewers/board/viewer";
 
+const DEFAULT_OPACITY = {
+    tracks: 1,
+    vias: 1,
+    pads: 1,
+    holes: 1,
+    zones: 0.25,
+    grid: 1,
+    page: 1,
+};
+
 export class KCBoardObjectsPanelElement extends KCUIElement {
     viewer: BoardViewer;
 
@@ -22,6 +32,16 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
     }
 
     private setup_events() {
+        // TODO: is there a better spot for this?
+        // Set default opacity values
+        this.viewer.track_opacity = DEFAULT_OPACITY.tracks;
+        this.viewer.via_opacity = DEFAULT_OPACITY.vias;
+        this.viewer.pad_opacity = DEFAULT_OPACITY.pads;
+        this.viewer.pad_hole_opacity = DEFAULT_OPACITY.holes;
+        this.viewer.zone_opacity = DEFAULT_OPACITY.zones;
+        this.viewer.grid_opacity = DEFAULT_OPACITY.grid;
+        this.viewer.page_opacity = DEFAULT_OPACITY.page;
+
         delegate(this.renderRoot, "kc-ui-range", "kc-ui-range:input", (e) => {
             const control = e.target as KCUIRangeElement;
             const opacity = control.valueAsNumber;
@@ -63,7 +83,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.tracks}"
                                 name="tracks"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -72,7 +92,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.vias}"
                                 name="vias"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -81,7 +101,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.pads}"
                                 name="pads"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -90,7 +110,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.holes}"
                                 name="holes"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -99,7 +119,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.zones}"
                                 name="zones"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -108,7 +128,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.grid}"
                                 name="grid"></kc-ui-range>
                         </kc-ui-control>
                         <kc-ui-control>
@@ -117,7 +137,7 @@ export class KCBoardObjectsPanelElement extends KCUIElement {
                                 min="0"
                                 max="1.0"
                                 step="0.01"
-                                value="1"
+                                value="${DEFAULT_OPACITY.page}"
                                 name="page"></kc-ui-range>
                         </kc-ui-control>
                     </kc-ui-control-list>
