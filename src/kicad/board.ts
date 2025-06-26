@@ -862,6 +862,7 @@ export class Footprint {
             this.#pads_by_number.set(pad.number, pad);
         }
 
+        // Legacy
         for (const d of this.drawings) {
             if (!(d instanceof FpText)) {
                 continue;
@@ -872,6 +873,15 @@ export class Footprint {
             }
             if (d.type == "value") {
                 this.value = d.text;
+            }
+        }
+
+        for (const [name, value] of Object.entries(this.properties)) {
+            if (name == "Reference") {
+                this.reference = value;
+            }
+            if (name == "Value") {
+                this.value = value;
             }
         }
     }
