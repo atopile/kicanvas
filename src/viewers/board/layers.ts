@@ -181,6 +181,11 @@ export function* copper_layers_between(
     }
 }
 
+const DEFAULT_LAYER_VISIBILITY: Record<string, VisibilityType> = {
+    [LayerNames.f_fab]: false,
+    [LayerNames.b_fab]: false,
+};
+
 /**
  * Board view layer set
  */
@@ -206,7 +211,8 @@ export class LayerSet extends BaseLayerSet {
                 continue;
             }
 
-            let visible: VisibilityType = true;
+            let visible: VisibilityType =
+                DEFAULT_LAYER_VISIBILITY[layer_name] ?? true;
             let interactive = false;
 
             // These virtual layers require at least one visible copper layer to be shown.
