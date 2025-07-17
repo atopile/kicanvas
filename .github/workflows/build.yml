@@ -7,6 +7,15 @@ on:
     branches: [ main ]
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to upload assets to'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -38,12 +47,13 @@ jobs:
         retention-days: 30
 
     - name: Create release asset on tag
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
+      if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          TAG_NAME="${{ github.event.release.tag_name }}"
+        else
+          TAG_NAME="${{ github.event.inputs.release_tag }}"
+        fi
+        gh release upload $TAG_NAME build/kicanvas.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: build/kicanvas.js
-        asset_name: kicanvas.js
-        asset_content_type: application/javascript
